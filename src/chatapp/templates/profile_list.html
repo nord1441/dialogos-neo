@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}profiles · chatapp{% endblock %}
+{% block content %}
+<header class="header">
+  <h1>profiles</h1>
+  <p class="muted">filesystem is the truth. add a directory under <code>PROFILES_ROOT</code> to create a profile.</p>
+</header>
+
+{% if not profiles %}
+  <p class="empty">no profiles found.</p>
+{% else %}
+<ul class="profile-list">
+  {% for p in profiles %}
+  <li>
+    <a href="/p/{{ p.slug }}">
+      <span class="icon">{{ p.meta.icon }}</span>
+      <span class="meta">
+        <span class="name">{{ p.meta.display_name or p.slug }}</span>
+        <span class="sub">
+          {{ p.model.provider }} · {{ p.model.name }} · {{ p.behavior.history_strategy }}
+        </span>
+      </span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

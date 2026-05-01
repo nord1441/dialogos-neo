@@ -1,0 +1,20 @@
+[meta]
+display_name = "Journal"
+icon = "📓"
+
+[model]
+provider = "anthropic"
+name = "claude-opus-4-7"
+temperature = 1.0
+max_tokens = 2048
+
+[behavior]
+history_strategy = "daily"
+auto_save = true
+timezone = "local"
+
+[api]
+key_ref = "anthropic_main"
+
+[ui]
+markdown_render = true

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ profile.meta.display_name or profile.slug }} · chatapp{% endblock %}
+{% block manifest %}
+<link rel="manifest" href="/p/{{ profile.slug }}/manifest.json" />
+{% endblock %}
+{% block content %}
+<header class="header conv-header">
+  <a class="back" href="/">←</a>
+  <h1>{{ profile.meta.icon }} {{ profile.meta.display_name or profile.slug }}</h1>
+  <div class="conv-meta">
+    <span>{{ profile.model.provider }} · {{ profile.model.name }}</span>
+    <span>{{ profile.behavior.history_strategy }} · {{ current_history }}</span>
+  </div>
+  {% if history_files and history_files|length > 1 %}
+  <details class="history-list">
+    <summary>history files</summary>
+    <ul>
+      {% for hf in history_files %}
+      <li>
+        {% set base = hf.removesuffix('.md') %}
+        <a href="/p/{{ profile.slug }}/history/{{ base }}">{{ hf }}</a>
+        {% if hf == current_history %} <span class="muted">(current)</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</header>
+
+<section id="messages" class="messages">
+  {% for m in messages %}
+    <article class="msg msg-{{ m.role }}">
+      <header class="role">{{ m.role }}</header>
+      <div class="body">{{ m.html | safe }}</div>
+    </article>
+  {% endfor %}
+</section>
+
+{% if not readonly %}
+<form
+  id="composer"
+  class="composer"
+  hx-ext="chatapp-sse"
+  hx-post="/p/{{ profile.slug }}/messages"
+  hx-trigger="submit"
+  data-target="#messages"
+>
+  <textarea name="content" placeholder="message {{ profile.meta.display_name or profile.slug }}..." required></textarea>
+  <div class="composer-actions">
+    {% if profile.behavior.history_strategy == "session" %}
+    <button type="button" class="btn-secondary" hx-post="/p/{{ profile.slug }}/sessions" hx-swap="none" hx-on:htmx:after-request="window.location.reload()">new session</button>
+    {% endif %}
+    <button type="submit" class="btn-primary">send</button>
+  </div>
+</form>
+{% else %}
+<div class="readonly-note muted">read-only view (historical file). open <a href="/p/{{ profile.slug }}">current history</a> to send messages.</div>
+{% endif %}
+
+<script src="/static/chatapp-sse.js" defer></script>
+{% endblock %}

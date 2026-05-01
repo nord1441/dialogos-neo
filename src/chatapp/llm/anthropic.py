@@ -5,6 +5,7 @@ from typing import AsyncIterator
 
 import httpx
 
+from ..attachments import encode_base64, extract_refs
 from .base import CompletionRequest, LLMError
 
 
@@ -12,18 +13,43 @@ ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
 
 
+def _content_blocks(req: CompletionRequest, body: str) -> list[dict] | str:
+    """Return either a plain string (no images) or a list of content blocks
+    (text + image_b64)."""
+    refs = extract_refs(body)
+    if not refs:
+        return body
+
+    blocks: list[dict] = [{"type": "text", "text": body}] if body.strip() else []
+    for ref in refs:
+        data = encode_base64(req.profile, ref)
+        if data is None:
+            continue
+        blocks.append({
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": ref.media_type,
+                "data": data,
+            },
+        })
+    if not blocks:
+        return body
+    return blocks
+
+
 def _to_anthropic_messages(req: CompletionRequest) -> list[dict]:
     out: list[dict] = []
     for m in req.messages:
         if m.role == "system":
-            # Anthropic takes system as a top-level field; in-history `system`
-            # blocks are flattened into the assistant/user stream by being
-            # treated as user context.
             out.append({"role": "user", "content": f"[system note]\n{m.content}"})
             continue
         if m.role not in ("user", "assistant"):
             continue
-        out.append({"role": m.role, "content": m.content})
+        if m.role == "user":
+            out.append({"role": m.role, "content": _content_blocks(req, m.content)})
+        else:
+            out.append({"role": m.role, "content": m.content})
     return out
 
 

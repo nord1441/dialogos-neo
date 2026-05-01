@@ -133,3 +133,28 @@ button {
 
 .empty { color: var(--muted); padding: 2rem 0; text-align: center; }
 .readonly-note { padding: 1rem; text-align: center; }
+
+img.attached {
+  max-width: 100%; max-height: 360px;
+  border-radius: 6px; margin: 0.4rem 0;
+  display: block;
+}
+
+.attachments-tray {
+  max-width: var(--max-width); margin: 0 auto 0.4rem;
+  display: flex; flex-wrap: wrap; gap: 0.4rem;
+}
+.attachment-chip {
+  position: relative;
+  width: 96px; height: 96px;
+  border: 1px solid var(--border); border-radius: 6px;
+  overflow: hidden; background: var(--user-bg);
+}
+.attachment-chip img { width: 100%; height: 100%; object-fit: cover; }
+.chip-remove {
+  position: absolute; top: 2px; right: 2px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(0,0,0,0.6); color: white; border: none;
+  font-size: 0.9rem; line-height: 1; padding: 0; cursor: pointer;
+}
+.composer.drag-active textarea { outline: 2px dashed var(--accent); }

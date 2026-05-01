@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import json
-
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from ..config import Settings
 from ..history import parser as history_parser
@@ -15,7 +13,7 @@ from ..profiles.loader import (
     load_profile,
     read_system_prompt,
 )
-from ..rendering import render_markdown, render_plain
+from ..rendering import render_markdown, render_user_html
 
 
 router = APIRouter()
@@ -58,9 +56,7 @@ async def profile_page(profile: str, request: Request):
         if m.role == "assistant" and prof.ui.markdown_render:
             html_body = render_markdown(m.content)
         elif m.role == "user":
-            # Users typed it themselves; render as plain text but allow
-            # newlines via white-space: pre-wrap in CSS.
-            html_body = render_plain(m.content) if False else _user_html(m.content)
+            html_body = render_user_html(m.content, prof.slug)
         else:
             html_body = render_markdown(m.content)
         rendered.append({"role": m.role, "html": html_body, "raw": m.content})
@@ -97,9 +93,9 @@ async def profile_history(profile: str, name: str, request: Request):
         {
             "role": m.role,
             "html": (
-                render_markdown(m.content)
-                if m.role != "user" or not prof.ui.markdown_render
-                else _user_html(m.content)
+                render_user_html(m.content, prof.slug)
+                if m.role == "user"
+                else render_markdown(m.content)
             ),
             "raw": m.content,
         }
@@ -136,10 +132,38 @@ async def profile_manifest(profile: str, request: Request):
         "display": "standalone",
         "background_color": "#ffffff",
         "theme_color": "#222222",
-        "icons": [],
+        "icons": [
+            {
+                "src": f"/p/{prof.slug}/icon.svg",
+                "sizes": "any",
+                "type": "image/svg+xml",
+                "purpose": "any",
+            },
+        ],
     })
 
 
-def _user_html(text: str) -> str:
-    import html
-    return f'<div class="user-text">{html.escape(text)}</div>'
+@router.get("/p/{profile}/icon.svg")
+async def profile_icon(profile: str, request: Request):
+    settings = _settings(request)
+    try:
+        prof = load_profile(settings.profiles_root, profile)
+    except ProfileNotFound:
+        raise HTTPException(status_code=404, detail="profile not found")
+    import html as html_mod
+    icon = html_mod.escape(prof.meta.icon or "💬", quote=True)
+    svg = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">'
+        '<rect width="512" height="512" rx="96" fill="#ffffff"/>'
+        f'<text x="50%" y="50%" font-size="320" text-anchor="middle" '
+        f'dominant-baseline="central" '
+        f'font-family="Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif">'
+        f'{icon}</text>'
+        '</svg>'
+    )
+    return Response(
+        content=svg,
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )

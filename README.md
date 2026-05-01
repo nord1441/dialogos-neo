@@ -109,7 +109,10 @@ Browser pages:
 | GET | `/p/{slug}/history/{name}` | view an older history file |
 | POST | `/p/{slug}/messages` | send a message, SSE stream back |
 | POST | `/p/{slug}/sessions` | create a new session file (session strategy) |
+| POST | `/p/{slug}/attachments` | upload an image (PNG/JPEG/GIF/WebP, ≤8 MiB) |
+| GET | `/p/{slug}/attachments/{name}` | serve a stored attachment |
 | GET | `/p/{slug}/manifest.json` | per-profile PWA manifest |
+| GET | `/p/{slug}/icon.svg` | PWA icon — generated from `meta.icon` emoji |
 
 JSON automation API (requires `Authorization: Bearer $API_TOKEN`):
 
@@ -150,9 +153,33 @@ The repo includes a small SSE client (`static/chatapp-sse.js`) that doesn't
 depend on htmx — `static/htmx.min.js` is a placeholder you can replace with
 the real htmx build if you want its declarative attributes elsewhere.
 
+## Image attachments
+
+Drag, drop, paste, or click 📎 in the composer. Uploaded images live at
+`<profile>/attachments/<uuid>.<ext>` and are referenced from `history.md`
+as standard Markdown:
+
+```markdown
+## user
+![](attachments/8c1b...e9.png)
+
+What does this stack trace mean?
+```
+
+The provider layer extracts those refs at send time and forwards them as
+Anthropic `image` content blocks (or OpenAI `image_url` data-URLs).
+Allowed types: PNG, JPEG, GIF, WebP. Max 8 MiB per file. Path-traversal
+attempts via the upload or serve routes are rejected.
+
+## Deployment
+
+See [`deploy/README.md`](deploy/README.md) for systemd, Caddy, nginx, and
+Docker recipes. The proxy MUST disable response buffering or SSE will
+stall — the supplied configs already handle this.
+
 ## Future
 
-- Image attachments (Anthropic image content blocks)
 - OpenAI / local provider polish (basic plumbing is already in place)
-- PWA icon generation from emoji
-- Auto-summarization for long histories
+- Auto-summarization or sliding-window for long histories
+- Optional iOS-friendly raster PWA icons (current SVG works on Android/desktop;
+  iOS sometimes prefers PNG)

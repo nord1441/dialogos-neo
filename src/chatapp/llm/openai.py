@@ -5,10 +5,29 @@ from typing import AsyncIterator
 
 import httpx
 
+from ..attachments import encode_base64, extract_refs
 from .base import CompletionRequest, LLMError
 
 
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+
+
+def _content_blocks(req: CompletionRequest, body: str) -> list[dict] | str:
+    refs = extract_refs(body)
+    if not refs:
+        return body
+    blocks: list[dict] = [{"type": "text", "text": body}] if body.strip() else []
+    for ref in refs:
+        data = encode_base64(req.profile, ref)
+        if data is None:
+            continue
+        blocks.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:{ref.media_type};base64,{data}"},
+        })
+    if not blocks:
+        return body
+    return blocks
 
 
 class OpenAICompatibleProvider:
@@ -29,8 +48,14 @@ class OpenAICompatibleProvider:
         if req.system:
             msgs.append({"role": "system", "content": req.system})
         for m in req.messages:
-            if m.role in ("user", "assistant", "system"):
-                msgs.append({"role": m.role, "content": m.content})
+            if m.role not in ("user", "assistant", "system"):
+                continue
+            content: list[dict] | str
+            if m.role == "user":
+                content = _content_blocks(req, m.content)
+            else:
+                content = m.content
+            msgs.append({"role": m.role, "content": content})
 
         body = {
             "model": req.profile.model.name,

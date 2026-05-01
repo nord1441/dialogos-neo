@@ -1,0 +1,28 @@
+# Caddyfile for dialogos-neo. Caddy auto-provisions TLS via Let's Encrypt.
+# Drop this in /etc/caddy/Caddyfile (or include from one).
+
+chat.example.com {
+    encode zstd gzip
+
+    # Optional: HTTP basic auth in front of the browser UI.
+    # Generate the hash with: caddy hash-password
+    # @ui not path /api/* /healthz
+    # basicauth @ui {
+    #     you JDJhJDE0JEx... # bcrypt hash
+    # }
+
+    # SSE-friendly reverse proxy.
+    reverse_proxy 127.0.0.1:8080 {
+        flush_interval -1
+        transport http {
+            read_timeout 10m
+        }
+    }
+
+    # Tighten headers a touch.
+    header {
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "no-referrer"
+        Permissions-Policy "interest-cohort=()"
+    }
+}

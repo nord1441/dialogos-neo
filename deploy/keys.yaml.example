@@ -1,0 +1,7 @@
+# /etc/chatapp/keys.yaml  (chmod 0600, owned by chatapp:chatapp)
+# Optional: an alternative to per-key env vars. profile.toml's
+# [api] key_ref = "anthropic_main"  ->  looks up "anthropic_main" here.
+# If both KEYS_FILE and API_KEY_* env vars exist, env vars win.
+
+anthropic_main: sk-ant-...
+# openai_personal: sk-...

@@ -40,15 +40,19 @@
 <form
   id="composer"
   class="composer"
-  hx-ext="chatapp-sse"
-  hx-post="/p/{{ profile.slug }}/messages"
-  hx-trigger="submit"
+  action="/p/{{ profile.slug }}/messages"
   data-target="#messages"
+  data-attachments-url="/p/{{ profile.slug }}/attachments"
+  data-sessions-url="/p/{{ profile.slug }}/sessions"
+  data-strategy="{{ profile.behavior.history_strategy }}"
 >
-  <textarea name="content" placeholder="message {{ profile.meta.display_name or profile.slug }}..." required></textarea>
+  <div class="attachments-tray" id="attachments-tray" hidden></div>
+  <textarea name="content" placeholder="message {{ profile.meta.display_name or profile.slug }}... (drop or paste images to attach)" required></textarea>
+  <input type="file" id="attach-input" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden />
   <div class="composer-actions">
+    <button type="button" id="attach-btn" class="btn-secondary" title="attach image">📎</button>
     {% if profile.behavior.history_strategy == "session" %}
-    <button type="button" class="btn-secondary" hx-post="/p/{{ profile.slug }}/sessions" hx-swap="none" hx-on:htmx:after-request="window.location.reload()">new session</button>
+    <button type="button" id="new-session-btn" class="btn-secondary">new session</button>
     {% endif %}
     <button type="submit" class="btn-primary">send</button>
   </div>

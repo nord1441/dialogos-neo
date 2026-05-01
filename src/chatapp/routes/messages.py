@@ -8,7 +8,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from ..history import strategies
-from ..rendering import render_markdown
+from ..rendering import render_markdown, render_user_html
 from ..services import get_profile_or_404, send_and_stream
 
 
@@ -23,7 +23,7 @@ async def post_message_sse(profile: str, request: Request, content: str = Form(.
 
     stream = await send_and_stream(settings, keys, prof, content)
     msg_id = "m-" + uuid.uuid4().hex[:8]
-    user_html = html.escape(content.strip())
+    user_html = render_user_html(content.strip(), prof.slug)
 
     async def gen():
         # Frame the user message and an empty assistant container before the

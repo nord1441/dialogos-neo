@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 
 from .config import Settings, load_keys
 from .routes import api as api_routes
+from .routes import attachments as attachment_routes
 from .routes import messages as message_routes
 from .routes import pages as page_routes
 
@@ -35,6 +36,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(page_routes.router)
     app.include_router(message_routes.router)
+    app.include_router(attachment_routes.router)
     app.include_router(api_routes.router)
 
     @app.get("/healthz")

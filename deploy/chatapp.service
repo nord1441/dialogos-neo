@@ -1,0 +1,44 @@
+[Unit]
+Description=dialogos-neo (chatapp) profile-based LLM chat
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=chatapp
+Group=chatapp
+WorkingDirectory=/var/lib/chatapp
+
+# Tunables.
+Environment="PROFILES_ROOT=/var/lib/chatapp/profiles"
+Environment="KEYS_FILE=/etc/chatapp/keys.yaml"
+Environment="LISTEN_ADDR=127.0.0.1:8080"
+Environment="LOG_LEVEL=info"
+
+# Secrets (API_TOKEN, API_KEY_*) live in secret.env (mode 0600, owned by chatapp).
+EnvironmentFile=/etc/chatapp/secret.env
+
+# Run via the installed console script. If you prefer a venv, swap in:
+#   ExecStart=/opt/chatapp/.venv/bin/chatapp serve
+ExecStart=/usr/local/bin/chatapp serve
+
+Restart=on-failure
+RestartSec=2s
+
+# Hardening.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=yes
+RestrictRealtime=yes
+SystemCallArchitectures=native
+ReadWritePaths=/var/lib/chatapp
+
+[Install]
+WantedBy=multi-user.target
